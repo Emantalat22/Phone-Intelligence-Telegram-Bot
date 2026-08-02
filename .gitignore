@@ -1,0 +1,6 @@
+.env
+__pycache__/
+*.pyc
+contact_qr.png
+received_image.jpg
+voice_message.ogg
