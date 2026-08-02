@@ -183,6 +183,11 @@ async def photo_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
     text = extract_text(image_path)
 
     phone = extract_phone_number(text)
+    print("OCR TEXT:")
+    print(text)
+
+    print("DETECTED PHONE:")
+    print(phone)
 
 
     if phone:
@@ -225,10 +230,9 @@ async def photo_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
 
     else:
-
-        await update.message.reply_text(
-            f"🔍 Extracted Text:\n\n{text}"
-        )
+     await update.message.reply_text(
+        "❌ No phone number found in this image."
+    )
 # ==========================
 # BUTTON HANDLER
 # ==========================
