@@ -17,8 +17,7 @@ from handlers import (
     whatsapp_handler,
     qr_handler,
     photo_handler,
-    button_handler,
-    voice_handler
+    button_handler
 )
 
 def main():
@@ -58,12 +57,12 @@ def main():
 
 
     # Voice message
-    app.add_handler(
-        MessageHandler(
-            filters.VOICE,
-            voice_handler
-        )
-    )
+  #  app.add_handler(
+   #     MessageHandler(
+     #       filters.VOICE,
+      #      voice_handler
+      #  )
+   # )
 
 
     # Buttons after OCR/Voice
