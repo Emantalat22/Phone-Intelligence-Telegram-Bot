@@ -12,6 +12,7 @@ from config import BOT_TOKEN
 
 from handlers import (
     start,
+    help_command,
     handle_message,
     whatsapp_handler,
     qr_handler,
@@ -29,6 +30,10 @@ def main():
     app.add_handler(
         CommandHandler("start", start)
     )
+    #help command
+    app.add_handler(
+    CommandHandler("help", help_command)
+)
 
 
     # WhatsApp command

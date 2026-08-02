@@ -459,3 +459,19 @@ async def voice_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
             "❌ No phone number detected."
 
         )
+async def help_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
+
+    await update.message.reply_text(
+        "🤖 Phone Intelligence Bot Help\n\n"
+        "📱 Send a phone number:\n"
+        "→ Get country, carrier, type, validity and timezone\n\n"
+        "💬 /whatsapp +number\n"
+        "→ Generate WhatsApp link\n\n"
+        "📇 /qr +number\n"
+        "→ Generate contact QR code\n\n"
+        "🖼 Send an image:\n"
+        "→ Extract phone numbers from screenshots\n\n"
+        "🎙 Send a voice message:\n"
+        "→ Convert voice into phone number\n\n"
+        "🌐 Choose language using /start"
+    )
