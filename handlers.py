@@ -6,7 +6,7 @@ from whatsapp import generate_whatsapp_link
 from qr_generator import generate_contact_qr
 from ocr import extract_text
 from phone_extractor import extract_phone_number
-#from voice import extract_voice_text
+from voice import extract_voice_text
 
 from language_manager import set_language, get_language
 
