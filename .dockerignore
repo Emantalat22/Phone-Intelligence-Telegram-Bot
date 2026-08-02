@@ -1,0 +1,11 @@
+venv/
+__pycache__/
+.git/
+.gitignore
+received_image.jpg
+screenshots/
+*.pyc
+*.pyo
+*.pyd
+*.log
+.env
