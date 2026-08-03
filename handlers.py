@@ -5,7 +5,7 @@ from lookup import get_phone_details
 from whatsapp import generate_whatsapp_link
 from qr_generator import generate_contact_qr
 from ocr import extract_text
-from phone_extractor import extract_phone_number
+from phone_extractor import extract_phone_number, extract_phone_numbers
 from voice import extract_voice_text
 
 from language_manager import set_language, get_language
@@ -31,12 +31,10 @@ async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
         ]
     ]
 
-    reply_markup = InlineKeyboardMarkup(keyboard)
-
     await update.message.reply_text(
         "🤖 Welcome to Phone Intelligence Bot\n\n"
         "Choose your language 🌐",
-        reply_markup=reply_markup
+        reply_markup=InlineKeyboardMarkup(keyboard)
     )
 
 
@@ -48,24 +46,20 @@ async def start(update: Update, context: ContextTypes.DEFAULT_TYPE):
 async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
     user_id = update.message.from_user.id
-    language = get_language(user_id)
 
     phone_number = update.message.text.strip()
 
     result = get_phone_details(phone_number)
 
+
     if "error" in result:
 
-        if language == "urdu":
-            await update.message.reply_text(
-                "❌ نمبر کی معلومات حاصل نہیں ہو سکیں۔"
-            )
-        else:
-            await update.message.reply_text(
-                "❌ Unable to fetch phone details."
-            )
+        await update.message.reply_text(
+            "❌ Unable to fetch phone details."
+        )
 
         return
+
 
 
     country = result["phone_location"]["country_name"]
@@ -77,21 +71,8 @@ async def handle_message(update: Update, context: ContextTypes.DEFAULT_TYPE):
     valid = result["phone_validation"]["is_valid"]
 
 
-    if language == "urdu":
 
-        reply = f"""
-📱 فون نمبر کی معلومات
-
-🌍 ملک: {country or 'نامعلوم'}
-📡 نیٹ ورک: {carrier or 'نامعلوم'}
-📱 قسم: {line_type or 'نامعلوم'}
-✅ درست: {valid}
-⏰ ٹائم زون: {timezone or 'نامعلوم'}
-"""
-
-    else:
-
-        reply = f"""
+    reply = f"""
 📱 Phone Number Details
 
 🌍 Country: {country or 'Unknown'}
@@ -160,7 +141,7 @@ async def qr_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
     await update.message.reply_photo(
         photo=open(qr_file, "rb"),
-        caption="📇 Contact QR Generated\n\nScan this QR code to save the contact."
+        caption="📇 Contact QR Generated"
     )
 
 
@@ -177,20 +158,107 @@ async def photo_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
     image_path = "received_image.jpg"
 
+
     await file.download_to_drive(image_path)
 
 
     text = extract_text(image_path)
 
-    phone = extract_phone_number(text)
+    phones = extract_phone_numbers(text)
+
+
     print("OCR TEXT:")
     print(text)
 
-    print("DETECTED PHONE:")
-    print(phone)
+    print("DETECTED PHONES:")
+    print(phones)
 
 
-    if phone:
+
+    if phones:
+
+
+        keyboard = []
+
+
+        for phone in phones:
+
+            keyboard.append(
+                [
+                    InlineKeyboardButton(
+                        f"🔍 {phone}",
+                        callback_data=f"select_{phone}"
+                    )
+                ]
+            )
+
+
+        await update.message.reply_text(
+
+            "📱 Phone numbers detected:\n\n"
+            "Select a number:",
+
+            reply_markup=InlineKeyboardMarkup(keyboard)
+
+        )
+
+
+    else:
+
+        await update.message.reply_text(
+            "❌ No phone number found in this image."
+        )
+
+
+
+# ==========================
+# BUTTON HANDLER
+# ==========================
+
+async def button_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
+
+    query = update.callback_query
+
+    await query.answer()
+
+    data = query.data
+
+    user_id = query.from_user.id
+
+
+
+    # LANGUAGE
+
+    if data == "lang_english":
+
+        set_language(user_id, "english")
+
+        await query.edit_message_text(
+            "✅ Language selected: English"
+        )
+
+        return
+
+
+
+    elif data == "lang_urdu":
+
+        set_language(user_id, "urdu")
+
+        await query.edit_message_text(
+            "✅ زبان منتخب کی گئی: اردو"
+        )
+
+        return
+
+
+
+    # SELECT NUMBER
+
+    if data.startswith("select_"):
+
+        phone = data.replace("select_", "")
+
 
         keyboard = [
 
@@ -218,63 +286,16 @@ async def photo_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
         ]
 
 
-        reply_markup = InlineKeyboardMarkup(keyboard)
+        await query.edit_message_text(
 
-
-        await update.message.reply_text(
-            f"📱 Phone Number Detected:\n\n"
-            f"{phone}\n\n"
+            f"📱 Selected Number:\n\n{phone}\n\n"
             "Choose an action:",
-            reply_markup=reply_markup
-        )
 
+            reply_markup=InlineKeyboardMarkup(keyboard)
 
-    else:
-     await update.message.reply_text(
-        "❌ No phone number found in this image."
-    )
-# ==========================
-# BUTTON HANDLER
-# ==========================
-
-async def button_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
-
-    query = update.callback_query
-
-    await query.answer()
-
-    data = query.data
-
-    user_id = query.from_user.id
-
-
-    # ==========================
-    # LANGUAGE SELECTION
-    # ==========================
-
-    if data == "lang_english":
-
-        set_language(user_id, "english")
-
-        await query.edit_message_text(
-            "✅ Language selected: English"
         )
 
         return
-
-
-    elif data == "lang_urdu":
-
-        set_language(user_id, "urdu")
-
-        await query.edit_message_text(
-            "✅ زبان منتخب کی گئی: اردو"
-        )
-
-        return
-
-
-
     # ==========================
     # LOOKUP BUTTON
     # ==========================
@@ -306,26 +327,7 @@ async def button_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
 
 
-        language = get_language(user_id)
-
-
-
-        if language == "urdu":
-
-            reply = f"""
-📱 فون نمبر کی معلومات
-
-🌍 ملک: {country or 'نامعلوم'}
-📡 نیٹ ورک: {carrier or 'نامعلوم'}
-📱 قسم: {line_type or 'نامعلوم'}
-✅ درست: {valid}
-⏰ ٹائم زون: {timezone or 'نامعلوم'}
-"""
-
-
-        else:
-
-            reply = f"""
+        reply = f"""
 📱 Phone Number Details
 
 🌍 Country: {country or 'Unknown'}
@@ -340,7 +342,6 @@ async def button_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
 
 
-
     # ==========================
     # WHATSAPP BUTTON
     # ==========================
@@ -349,13 +350,13 @@ async def button_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
         phone = data.replace("whatsapp_", "")
 
+
         link = generate_whatsapp_link(phone)
 
 
         await query.message.reply_text(
             f"💬 WhatsApp Link:\n{link}"
         )
-
 
 
 
@@ -375,7 +376,6 @@ async def button_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
             photo=open(qr_file, "rb"),
             caption="📇 Contact QR Generated"
         )
-
 
 
 
@@ -439,19 +439,15 @@ async def voice_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
         ]
 
 
-        reply_markup = InlineKeyboardMarkup(keyboard)
-
-
-
         await update.message.reply_text(
 
             f"🎙️ Voice Converted:\n\n"
             f"📱 Phone Number Detected:\n{phone}\n\n"
             "Choose an action:",
 
-            reply_markup=reply_markup
-        )
+            reply_markup=InlineKeyboardMarkup(keyboard)
 
+        )
 
 
     else:
@@ -463,19 +459,34 @@ async def voice_handler(update: Update, context: ContextTypes.DEFAULT_TYPE):
             "❌ No phone number detected."
 
         )
+
+
+
+# ==========================
+# HELP COMMAND
+# ==========================
+
 async def help_command(update: Update, context: ContextTypes.DEFAULT_TYPE):
 
     await update.message.reply_text(
+
         "🤖 Phone Intelligence Bot Help\n\n"
+
         "📱 Send a phone number:\n"
         "→ Get country, carrier, type, validity and timezone\n\n"
+
         "💬 /whatsapp +number\n"
         "→ Generate WhatsApp link\n\n"
+
         "📇 /qr +number\n"
         "→ Generate contact QR code\n\n"
+
         "🖼 Send an image:\n"
-        "→ Extract phone numbers from screenshots\n\n"
+        "→ Extract multiple phone numbers from screenshots\n\n"
+
         "🎙 Send a voice message:\n"
         "→ Convert voice into phone number\n\n"
+
         "🌐 Choose language using /start"
+
     )
